@@ -49,7 +49,7 @@ RPC.callMany([
 ], catched);
 ```
 
-JSONRPC20Client(send)
+`JSONRPC20Client(send)`
 ---------------------
 
 `function send(request, callback)` is used for communication with remote server. Arguments:
@@ -57,17 +57,17 @@ JSONRPC20Client(send)
 * JSON encoded request.
 * Callback of type `function (response)`. `response` must be string or `Error` object in case of connection error.
 
-### JSONRPC20Client.callOne(call, callback)
+### `JSONRPC20Client.callOne(call, callback)`
 
-Performs a remote procedure call. Arguments are Call object and optional callback for connection and protocol level error handling.
+Performs a remote procedure call. Arguments are `Call` object and optional callback for connection and protocol level error handling.
 
-### JSONRPC20Client.callMany(calls, callback)
+### `JSONRPC20Client.callMany(calls, callback)`
 
-Performs several remote procedure calls. Requires an array of Call objects. Additional callback may be specified for connection and protocol level error handling.
+Performs several remote procedure calls. Requires an array of `Call` objects. Additional callback may be specified for connection and protocol level error handling.
 
-### Call(method, params, callback)
+### `Call(method, params, callback)`
 
-Call object. Cunstructor arguments:
+`Call` object. Cunstructor arguments:
 
 * Method name.
 * Object or array of arguments for method call. May be omitted.
