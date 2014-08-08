@@ -65,7 +65,7 @@ Performs a remote procedure call. Arguments are `Call` object and optional callb
 
 Performs several remote procedure calls. Requires an array of `Call` objects. Additional callback may be specified for connection and protocol level error handling.
 
-### `Call(method, params, callback)`
+### `JSONRPC20Client.Call(method, params, callback)`
 
 `Call` object. Cunstructor arguments:
 
