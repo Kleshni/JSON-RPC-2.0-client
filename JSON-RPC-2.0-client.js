@@ -99,6 +99,7 @@ function JSONRPC20Client(send) {
 						catched(new Error("Invalid server response"));
 					}
 				} else {
+					call.result = result;
 					call.callback(result);
 				}
 			}
