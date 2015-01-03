@@ -55,7 +55,7 @@ function JSONRPC20Client(send) {
 		}
 	}
 
-	this.callOne = function (call, catched) {
+	this.callOne = function (call, caught) {
 		var expected = {};
 		var request = {
 			"jsonrpc": "2.0",
@@ -68,18 +68,18 @@ function JSONRPC20Client(send) {
 			expected[request.id] = call;
 		}
 
-		catched = catched !== undefined ? catched : function () {};
+		caught = caught !== undefined ? caught : function () {};
 
 		function receive(response) {
 			if (Object.keys(expected).length == 0) {
 				if (response !== "") {
-					catched(new Error("Invalid server response"));
+					caught(new Error("Invalid server response"));
 				}
 			} else {
 				try {
 					response = parseResponse(response);
 				} catch (exception) {
-					catched(exception);
+					caught(exception);
 					return;
 				}
 
@@ -88,15 +88,15 @@ function JSONRPC20Client(send) {
 				try {
 					var result = processResult(expected, response);
 				} catch (exception) {
-					catched(exception);
+					caught(exception);
 					return;
 				}
 
 				if (response.id == null) {
 					if (result instanceof Error) {
-						catched(result);
+						caught(result);
 					} else {
-						catched(new Error("Invalid server response"));
+						caught(new Error("Invalid server response"));
 					}
 				} else {
 					call.result = result;
@@ -108,7 +108,7 @@ function JSONRPC20Client(send) {
 		send(JSON.stringify(request), receive);
 	};
 
-	this.callMany = function (calls, catched) {
+	this.callMany = function (calls, caught) {
 		var expected = {};
 		var request = [];
 
@@ -127,18 +127,18 @@ function JSONRPC20Client(send) {
 			request.push(temp);
 		}
 
-		catched = catched !== undefined ? catched : function () {};
+		caught = caught !== undefined ? caught : function () {};
 
 		function receive(response) {
 			if (Object.keys(expected).length == 0) {
 				if (response !== "") {
-					catched(new Error("Invalid server response"));
+					caught(new Error("Invalid server response"));
 				}
 			} else {
 				try {
 					response = parseResponse(response);
 				} catch (exception) {
-					catched(exception);
+					caught(exception);
 					return;
 				}
 
@@ -147,7 +147,7 @@ function JSONRPC20Client(send) {
 						try {
 							var result = processResult(expected, response[i]);
 						} catch (exception) {
-							catched(exception);
+							caught(exception);
 							return;
 						}
 
@@ -161,14 +161,14 @@ function JSONRPC20Client(send) {
 					try {
 						var result = processResult({null: undefined}, response);
 					} catch (exception) {
-						catched(exception);
+						caught(exception);
 						return;
 					}
 
 					if (result instanceof Error) {
-						catched(result);
+						caught(result);
 					} else {
-						catched(new Error("Invalid server response"));
+						caught(new Error("Invalid server response"));
 					}
 				}
 			}

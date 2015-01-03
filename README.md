@@ -36,21 +36,21 @@ function callback(result) {
 	console.log(result);
 }
 
-function catched(error) {
+function caught(error) {
 	console.error(error);
 }
 
-RPC.callOne(new RPC.Call("add", [1, 2], callback), catched);
+RPC.callOne(new RPC.Call("add", [1, 2], callback), caught);
 
 RPC.callMany([
 	new RPC.Call("add", [1, 2], callback),
 	new RPC.Call("sub", [3, 1]),
 	new RPC.Call("div", [1, 0], callback)
-], catched);
+], caught);
 ```
 
 `JSONRPC20Client(send)`
----------------------
+-----------------------
 
 `function send(request, callback)` is used for communication with remote server. Arguments:
 
