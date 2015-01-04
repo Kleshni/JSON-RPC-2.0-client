@@ -11,10 +11,10 @@ Example usage with HTTP as transport (see [CORS](https://developer.mozilla.org/e
 ``` Javascript
 var address = "http://127.0.0.1:8000/";
 
-function send(request, callback) {
+var send = function (request, callback) {
 	var requester = new XMLHttpRequest(); 
 
-	function load(event) {
+	var load = function (event) {
 		if (this.readyState == 4) {
 			if (this.status == 200 && this.getResponseHeader("content-type") == "application/json") {
 				callback(this.response);
@@ -22,23 +22,23 @@ function send(request, callback) {
 				callback(new Error("Query error"));
 			}
 		}
-	}
+	};
 
 	requester.addEventListener("readystatechange", load);
 	requester.open("POST", address);
 	requester.setRequestHeader("Content-Type", "application/json");
 	requester.send(request);
-}
+};
 
 var RPC = new JSONRPC20Client(send);
 
-function callback(result) {
+var callback = function (result) {
 	console.log(result);
-}
+};
 
-function caught(error) {
+var caught = function (error) {
 	console.error(error);
-}
+};
 
 RPC.callOne(new RPC.Call("add", [1, 2], callback), caught);
 
