@@ -31,7 +31,7 @@ var JSONRPC20Client = function (send) {
 					typeof (result.error.message) == "string" && (
 						Object.keys(result.error).length == 2 ||
 						Object.keys(result.error).length == 3 &&
-						"data" in result
+						"data" in result.error
 					)
 				)
 			)
@@ -51,6 +51,7 @@ var JSONRPC20Client = function (send) {
 				return result.result;
 			}
 		} else {
+		console.log(checkResultFormat(result), result.id, expected);
 			throw new Error("Invalid server response");
 		}
 	};
