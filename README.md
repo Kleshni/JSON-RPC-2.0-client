@@ -40,12 +40,12 @@ var caught = function (error) {
 	console.error(error);
 };
 
-RPC.callOne(new RPC.Call("add", [1, 2], callback), caught);
+RPC.callOne(new JSONRPC20Client.Call("add", [1, 2], callback), caught);
 
 RPC.callMany([
-	new RPC.Call("add", [1, 2], callback),
-	new RPC.Call("sub", [3, 1]),
-	new RPC.Call("div", [1, 0], callback)
+	new JSONRPC20Client.Call("add", [1, 2], callback),
+	new JSONRPC20Client.Call("sub", [3, 1]),
+	new JSONRPC20Client.Call("div", [1, 0], callback)
 ], caught);
 ```
 
