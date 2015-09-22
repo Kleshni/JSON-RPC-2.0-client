@@ -1,12 +1,18 @@
 var JSONRPC20Client;
 
 (function () {
-	var Call = function (method, params, callback) {
+	var Call = function (method) {
 		this.method = method;
-		this.params = params;
 
-		if (2 in arguments) {
-			this.callback = callback;
+		if (arguments.length >= 3) {
+			this.params = arguments[1];
+			this.callback = arguments[2];
+		} else if (arguments.length >= 2) {
+			if (typeof arguments[1] === "function") {
+				this.callback = arguments[1];
+			} else {
+				this.params = arguments[1];
+			}
 		}
 	};
 
@@ -16,7 +22,7 @@ var JSONRPC20Client;
 		var createIDString = function () {
 			return "{xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx}".replace(/[xy]/g, function (match) {
 				var nibble = ~~(Math.random() * 16);
-				return (match == "x" ? nibble : (nibble & 0x3 | 0x8)).toString(16);
+				return (match === "x" ? nibble : (nibble & 0x3 | 0x8)).toString(16);
 			});
 		};
 
@@ -32,9 +38,9 @@ var JSONRPC20Client;
 			var keysCount = Object.keys(error).length;
 
 			return (
-				typeof error.code == "number" && error.code % 1 == 0 &&
-				typeof error.message == "string" &&
-				(keysCount == 2 || keysCount == 3 && "data" in error)
+				typeof error.code === "number" && error.code % 1 === 0 &&
+				typeof error.message === "string" &&
+				(keysCount === 2 || keysCount === 3 && "data" in error)
 			);
 		};
 
@@ -43,7 +49,7 @@ var JSONRPC20Client;
 				response.jsonrpc === "2.0" &&
 				"id" in response && (response.id === null || response.id in expected) &&
 				("result" in response || "error" in response && checkErrorFormat(response.error)) &&
-				Object.keys(response).length == 3
+				Object.keys(response).length === 3
 			);
 		};
 
@@ -89,16 +95,19 @@ var JSONRPC20Client;
 
 			var request = {
 				"jsonrpc": "2.0",
-				"method": call.method,
-				"params": call.params
+				"method": call.method
 			};
+
+			if ("params" in call) {
+				request.params = call.params;
+			}
 
 			if ("callback" in call) {
 				request.id = createIDString();
 				expected[request.id] = call;
 			}
 
-			caught = 1 in arguments ? caught : new Function();
+			caught = arguments.length >= 2 ? caught : new Function();
 
 			var receive = function (data) {
 				var processed;
@@ -138,9 +147,12 @@ var JSONRPC20Client;
 			for (var i = 0; i < calls.length; ++i) {
 				var temp = {
 					"jsonrpc": "2.0",
-					"method": calls[i].method,
-					"params": calls[i].params
+					"method": calls[i].method
 				};
+
+				if ("params" in calls[i]) {
+					temp.params = calls[i].params;
+				}
 
 				if ("callback" in calls[i]) {
 					temp.id = createIDString();
@@ -150,7 +162,7 @@ var JSONRPC20Client;
 				request.push(temp);
 			}
 
-			caught = 1 in arguments ? caught : new Function();
+			caught = arguments.length >= 2 ? caught : new Function();
 
 			var receive = function (response) {
 				var processed = [];
