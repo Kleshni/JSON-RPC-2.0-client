@@ -57,15 +57,16 @@ Constructor of a client object. One argument of a type `function send(request, c
 * A JSON encoded request.
 * A callback of a type `function (response)`. `response` must be a string or an `Error` object in case of a connection error.
 
-### `JSONRPC20Client.callOne(call, callback)`
+### `callOne(call, callback)`
 
 Performs a remote procedure call. Arguments are a `Call` object and an optional callback for a connection and protocol level error handling.
 
-### `JSONRPC20Client.callMany(calls, callback)`
+### `callMany(calls, callback)`
 
 Performs several remote procedure calls. Requires an array of `Call` objects. An additional callback may be specified for a connection and protocol level error handling.
 
-### `Call(method, params, callback)`
+`JSONRPC20Client.Call(method, params, callback)`
+------------------------------------------------
 
 A `Call` object constructor. Arguments:
 
