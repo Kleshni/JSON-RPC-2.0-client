@@ -1,36 +1,55 @@
-var JSONRPC20Client;
+"use strict";
 
-(function () {
+var JSONRPC20Client = function () {
+	var createIDString = function () {
+		return "{xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx}".replace(/[xy]/g, function (match) {
+			var nibble = Math.floor(Math.random() * 16);
+			return (match === "x" ? nibble : (nibble & 0x3 | 0x8)).toString(16);
+		});
+	};
+
 	var Call = function (method) {
 		this.method = method;
 
 		if (arguments.length >= 3) {
 			this.params = arguments[1];
 			this.callback = arguments[2];
-		} else if (arguments.length >= 2) {
+		} else if (arguments.length === 2) {
 			if (typeof arguments[1] === "function") {
 				this.callback = arguments[1];
 			} else {
 				this.params = arguments[1];
 			}
 		}
-	};
 
-	JSONRPC20Client = function (send) {
-		this.Call = Call; // Compatibility
-
-		var createIDString = function () {
-			return "{xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx}".replace(/[xy]/g, function (match) {
-				var nibble = ~~(Math.random() * 16);
-				return (match === "x" ? nibble : (nibble & 0x3 | 0x8)).toString(16);
-			});
+		this.object = {
+			"jsonrpc": "2.0",
+			"method": this.method
 		};
 
-		var parseResponse = function (response) {
-			if (response instanceof Error) {
-				throw response;
+		if ("params" in this) {
+			this.object.params = this.params;
+		}
+
+		if ("callback" in this) {
+			this.object.id = createIDString();
+		}
+	};
+
+	var JSONRPC20Client = function (send) {
+		this.Call = Call; // Compatibility
+
+		var parseResponse = function (data, expected) {
+			if (data instanceof Error) {
+				throw data;
 			} else {
-				return JSON.parse(response);
+				if (Object.keys(expected).length !== 0) {
+					return JSON.parse(data);
+				} else if (data.length !== 0) {
+					throw new Error("Invalid server response");
+				} else {
+					return null;
+				}
 			}
 		};
 
@@ -46,8 +65,8 @@ var JSONRPC20Client;
 
 		var checkResponseFormat = function (response, expected) {
 			return (
-				response.jsonrpc === "2.0" &&
-				"id" in response && (response.id === null || response.id in expected) &&
+				"jsonrpc" in response && response.jsonrpc === "2.0" &&
+				"id" in response && response.id in expected &&
 				("result" in response || "error" in response && checkErrorFormat(response.error)) &&
 				Object.keys(response).length === 3
 			);
@@ -61,7 +80,10 @@ var JSONRPC20Client;
 					var error = new Error(response.error.message);
 
 					error.code = response.error.code;
-					error.data = response.error.data;
+
+					if ("data" in response.error) {
+						error.data = response.error.data;
+					}
 
 					result = error;
 				} else {
@@ -71,140 +93,108 @@ var JSONRPC20Client;
 				throw Error("Invalid server response");
 			}
 
-			if (response.id === null) {
-				if (result instanceof Error) {
-					throw result;
-				} else {
-					throw new Error("Invalid server response");
-				}
-			} else if (response.id in expected) {
-				var call = expected[response.id];
+			var call = expected[response.id];
 
-				delete expected[response.id];
+			delete expected[response.id];
 
-				call.result = result;
+			call.result = result;
 
-				return call;
-			} else {
-				throw new Error("Invalid server response");
-			}
+			return call;
 		};
+
+		var noop = function () {};
 
 		this.callOne = function (call, caught) {
 			var expected = Object.create(null);
 
-			var request = {
-				"jsonrpc": "2.0",
-				"method": call.method
-			};
-
-			if ("params" in call) {
-				request.params = call.params;
-			}
-
 			if ("callback" in call) {
-				request.id = createIDString();
-				expected[request.id] = call;
+				expected[call.object.id] = call;
 			}
 
-			caught = arguments.length >= 2 ? caught : new Function();
+			caught = arguments.length >= 2 ? caught : noop;
 
 			var receive = function (data) {
+				var response;
+
+				try {
+					response = parseResponse(data, expected);
+				} catch (exception) {
+					caught(exception);
+
+					return;
+				}
+
+				if (response === null) {
+					return;
+				}
+
 				var processed;
 
-				if (Object.keys(expected).length != 0) {
-					var response;
+				try {
+					processed = processResponse(response, expected);
+				} catch (exception) {
+					caught(exception);
 
-					try {
-						response = parseResponse(data);
-					} catch (exception) {
-						caught(exception);
-
-						return;
-					}
-
-					try {
-						processed = processResponse(response, expected);
-					} catch (exception) {
-						caught(exception);
-
-						return;
-					}
+					return;
 				}
 
-				if (processed !== undefined) {
-					processed.callback(processed.result);
-				}
+				processed.callback(processed.result);
 			};
 
-			send(JSON.stringify(request), receive);
+			send(JSON.stringify(call.object), receive);
 		};
 
 		this.callMany = function (calls, caught) {
-			var expected = Object.create(null);
 			var request = [];
+			var expected = Object.create(null);
 
 			for (var i = 0; i < calls.length; ++i) {
-				var temp = {
-					"jsonrpc": "2.0",
-					"method": calls[i].method
-				};
-
-				if ("params" in calls[i]) {
-					temp.params = calls[i].params;
-				}
+				request.push(calls[i].object);
 
 				if ("callback" in calls[i]) {
-					temp.id = createIDString();
-					expected[temp.id] = calls[i];
+					expected[calls[i].object.id] = calls[i];
 				}
-
-				request.push(temp);
 			}
 
-			caught = arguments.length >= 2 ? caught : new Function();
+			caught = arguments.length >= 2 ? caught : noop;
 
-			var receive = function (response) {
+			var receive = function (data) {
+				var response;
+
+				try {
+					response = parseResponse(data, expected);
+				} catch (exception) {
+					caught(exception);
+
+					return;
+				}
+
+				if (response === null) {
+					return;
+				}
+
+				if (!(response instanceof Array)) {
+					caught(new Error("Invalid server response"));
+
+					return;
+				}
+
 				var processed = [];
 
-				if (Object.keys(expected).length != 0) {
+				for (var i = 0; i < response.length; ++i) {
 					try {
-						response = parseResponse(response);
+						processed.push(processResponse(response[i], expected));
 					} catch (exception) {
 						caught(exception);
 
 						return;
 					}
+				}
 
-					if (response instanceof Array && response.length > 0) {
-						for (var i = 0; i < response.length; ++i) {
-							try {
-								processed.push(processResponse(response[i], expected));
-							} catch (exception) {
-								caught(exception);
+				if (Object.keys(expected).length !== 0) {
+					caught(new Error("Invalid server response"));
 
-								return;
-							}
-						}
-					} else if (response instanceof Object && response !== null) {
-						try {
-							processed.push(processResponse(response, expected));
-						} catch (exception) {
-							caught(exception);
-
-							return;
-						}
-					} else {
-						caught("Invalid server response");
-
-						return;
-					}
-
-					if (Object.keys(expected).length != 0) {
-						caught("Invalid server response");
-
-						return;
-					}
+					return;
 				}
 
 				for (var i = 0; i < processed.length; ++i) {
@@ -217,4 +207,6 @@ var JSONRPC20Client;
 	};
 
 	JSONRPC20Client.Call = Call;
-})();
+
+	return JSONRPC20Client;
+}();
